@@ -1,3 +1,20 @@
+current review to fixe some issues
+in bus.cpp:
+- collision detection, introduction of windows to avoid detection of refelctions of low bit pulse which can extend the bit duration up to
+70us
+- handling of default phy addr.  (e.g. in case of uninitialized SW), set to default 15.15.252 for normal device or allow 0.0.0 for router
+-compiled with ROUTER definition
+- setting correct waiting time for reply and prio telegrams (according to bits in control byte of telegram)
+
+in com_objects.cpp:
+- handling of read/write of object by the APP, check for correct flag before send telegram to bus or local object (in case they share same
+group addr.)
+  (not completed yet)
+- added default telegram rate limit in order to avoid sending stage overload
+
+
+
+
 Selfbus EIB Library
 ===================
 
