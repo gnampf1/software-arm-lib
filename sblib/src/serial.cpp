@@ -3,6 +3,11 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *
+ *  updated  March 2021 by HoRa:
+ *       	Interrupt priority set to lowest level in order to avoid conflicts with the time critical knx bus interrupt source
+ *       	value for high speed baud rates for debugging of bus timing
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -64,31 +69,44 @@ void Serial::setTxPin(int txPin)
 
 void Serial::begin(int baudRate, SerialConfig config)
 {
-    disableInterrupt(UART_IRQn);
+	disableInterrupt(UART_IRQn);
 
-    LPC_SYSCON->SYSAHBCLKCTRL |= 1 << 12; // Enable UART clock
-    LPC_SYSCON->UARTCLKDIV = 1;           // divided by 1
+	LPC_SYSCON->SYSAHBCLKCTRL |= 1 << 12; // Enable UART clock
+	LPC_SYSCON->UARTCLKDIV = 1;           // divided by 1
 
-    LPC_UART->LCR = 0x80 | config;
+	LPC_UART->LCR = 0x80 | config;
 
-    unsigned int val = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
-        LPC_SYSCON->UARTCLKDIV / 16 / baudRate;
+	unsigned int val = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
+			LPC_SYSCON->UARTCLKDIV / 16 / baudRate;
 
-    LPC_UART->DLM  = val / 256;
-    LPC_UART->DLL  = val % 256;
+// added by Hora for high speed uart for debug of bus timing
+	if (baudRate == 460800){
+		val = 5;
+		LPC_UART->FDR = ( 0x00a3);  //DIVADDVAL = 3, MULVAL = 10
 
-    LPC_UART->LCR = (int) config;  // Configure data bits, parity, stop bits
-    LPC_UART->FCR = 0x07;          // Enable and reset TX and RX FIFO.
-    LPC_UART->MCR = 0;             // Disable modem controls (DTR, DSR, RTS, CTS)
-    LPC_UART->IER |= UART_IE_RBR;  // Enable RX/TX interrupts
+	}else if( baudRate == 576000) {
+		val = 3;
+		LPC_UART->FDR = (0x00fb);  //DIVADDVAL = 11, MULVAL = 15
+	}
+//
+	LPC_UART->DLM  = val / 256;
+	LPC_UART->DLL  = val % 256;
 
-    // Ensure a clean start, no data in either TX or RX FIFO
-    flush();
-    clearBuffers();
+	LPC_UART->LCR = (int) config;  // Configure data bits, parity, stop bits
+	LPC_UART->FCR = 0x07;          // Enable and reset TX and RX FIFO.
+	LPC_UART->MCR = 0;             // Disable modem controls (DTR, DSR, RTS, CTS)
+	LPC_UART->IER |= UART_IE_RBR;  // Enable RX/TX interrupts
+
+	// Ensure a clean start, no data in either TX or RX FIFO
+	flush();
+	clearBuffers();
 
     // Drop data from the RX FIFO
     while (LPC_UART->LSR & LSR_RDR)
         val = LPC_UART->RBR;
+
+    //added by Hora in order to provide the highest interrupt level to the bus timer of the lib
+    NVIC_SetPriority (UART_IRQn, 3);
 
     enableInterrupt(UART_IRQn);
 }

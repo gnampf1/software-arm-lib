@@ -42,7 +42,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
 	_begin();
 #ifdef DUMP_TELEGRAMS
-    serial.begin(115200);
+ //   serial.begin(115200);
     serial.println("Telegram dump enabled");
 #endif
 
@@ -119,42 +119,161 @@ void BcuBase::setOwnAddress(int addr)
 
 void BcuBase::loop()
 {
-    if (!enabled)
-        return;
+	if (!enabled)
+		return;
 
 #ifdef DUMP_TELEGRAMS
+	extern unsigned char telBuffer[];
+	extern unsigned int telLength, db_state;
+	extern unsigned int telRXtime;
+	extern bool telcollision;
+
+	if (telLength > 0)
 	{
-    	extern unsigned char telBuffer[];
-    	extern unsigned int telLength ;
-    	if (telLength > 0)
-    	{
-    		serial.print("RCV: ");
-            for (int i = 0; i < telLength; ++i)
-            {
-                if (i) serial.print(" ");
-                serial.print(telBuffer[i], HEX, 2);
-            }
-            serial.println();
-            telLength = 0;
-    	}
+		serial.println();
+		serial.print("RCV: (");
+
+		serial.print(telRXtime, DEC, 8);
+		serial.print(") ");
+		if (telcollision)  serial.print("collision ");
+
+		for (int i = 0; i < telLength; ++i)
+		{
+			if (i) serial.print(" ");
+			serial.print(telBuffer[i], HEX, 2);
+		}
+		serial.println();
+		telLength = 0;
 	}
 #endif
 
-    if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
-        processTelegram();
+#ifdef DEBUG_BUS
 
-    if (progPin)
-    {
-        // Detect the falling edge of pressing the prog button
-        pinMode(progPin, INPUT|PULL_UP);
-        int oldValue = progButtonDebouncer.value();
-        if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
-        {
-            userRam.status ^= 0x81;  // toggle programming mode and checksum bit
-        }
-        pinMode(progPin, OUTPUT);
-        digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
-    }
+	// 0-99 state, 1xx -9xx point within state
+	// state: 8000 - 8999 all timer values
+	// 000-3999  one timer value
+	//4000-5999 one hex value
+	//6000-7999 one dec value
+	//9000 - rx tel data values
+
+
+	static unsigned int t,l, l1, lt,lt1, s, ls, cv,tv, tmv;
+	bool cf;
+	l=0; l1=0;
+	//while (tb_in != tb_out && l1 < 10) {
+	while (tb_in != tb_out) {
+		l1++;
+		s= td_b[tb_out].ts;
+		t= td_b[tb_out].tt;
+		tv= td_b[tb_out].ttv;
+		cv= td_b[tb_out].tcv;
+		tmv= td_b[tb_out].ttmv;
+		cf= td_b[tb_out].tc;
+		if ((s>=8000 && s<=8999) ) {
+			serial.println();
+			//serial.print("s:");
+			serial.print( (unsigned int) s, DEC, 3);
+			serial.print(" t");
+			serial.print( (unsigned int) t, DEC, 6);
+			serial.print(" dt");
+			serial.print( (unsigned int) t-lt, DEC,4);
+			serial.print(" f");
+			serial.print((unsigned int)cf, DEC, 1);
+			serial.print(" c");
+			serial.print((unsigned int)cv, DEC, 4);
+			serial.print(" t");
+			serial.print((unsigned int)tv, DEC, 4);
+			serial.print(" m");
+			serial.print((unsigned int)tmv, DEC,4);
+/*			serial.print(" i");
+			serial.print((unsigned int)tb_in, DEC,3);
+			serial.print(" o");
+			serial.print((unsigned int)tb_out, DEC,3);
+*/
+			//			serial.print("*");
+			l=1;
+			lt = t;
+			lt1= t;
+		}
+		else if ( s>=9000) {
+			serial.println();
+			serial.print("s:");
+			serial.print( (unsigned int) s, DEC, 3);
+			serial.print(" c/v:");
+			serial.print((unsigned int)cf, HEX, 2);
+			serial.print(" L");
+			serial.print((unsigned int)tmv, DEC, 2);
+			serial.print(" t:");
+			serial.print( (unsigned int) t, HEX, 8);
+			serial.print(" ");
+			serial.print((unsigned int)cv, HEX, 4);
+			serial.print(" ");
+			serial.print((unsigned int)tv, HEX, 4);
+			//serial.print("*");
+		}else if ( s>=9005) {
+			serial.println();
+			serial.print("s:");
+			serial.print( (unsigned int) s, DEC, 3);
+			serial.print(" ");
+			serial.print((unsigned int)tmv, HEX,4);
+			serial.print(" ");
+			serial.print( (unsigned int) t, HEX, 8);
+			serial.print(" ");
+			serial.print((unsigned int)cv, HEX, 4);
+			serial.print(" ");
+			serial.print((unsigned int)tv, HEX, 4);
+			serial.print(" d:");
+			serial.print((unsigned int)cf, HEX, 4);
+			//serial.print("*");
+		}
+		else  if (s < 4000) { // one  delta timer
+			serial.print("s:");
+			serial.print( (unsigned int) s -2000, DEC, 3);
+			serial.print(" dt:");
+			serial.print( (unsigned int) t-lt1, DEC, 6);
+			lt1 = t;
+			l++;
+		}
+		else if (s < 5000) { // one hex
+			serial.print("s:");
+			serial.print( (unsigned int) s- 4000, DEC, 3);
+			serial.print(" h");
+			serial.print( (unsigned int) t,HEX,4);
+			l++;
+		}
+		else if (s < 6000) { // one dec
+			serial.print("s:");
+			serial.print( (unsigned int) s- 5000, DEC, 3);
+			serial.print(" d");
+			serial.print( (unsigned int) t,DEC,4);
+			l++;
+		}
+		if(l >5) {
+			l=0;
+			serial.println();
+//			serial.print("* ");
+		} else  serial.print(" *");
+		if (++tb_out >= tb_lngth){ tb_out =0; tb_in_ov = false;}
+		if(tb_in_ov && tb_out <= tb_in)  serial.print(" !!OV**");
+	}
+#endif
+
+
+	if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
+		processTelegram();
+
+	if (progPin)
+	{
+		// Detect the falling edge of pressing the prog button
+		pinMode(progPin, INPUT|PULL_UP);
+		int oldValue = progButtonDebouncer.value();
+		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
+		{
+			userRam.status ^= 0x81;  // toggle programming mode and checksum bit
+		}
+		pinMode(progPin, OUTPUT);
+		digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
+	}
 }
 
 void BcuBase::processTelegram()

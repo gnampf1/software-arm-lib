@@ -29,7 +29,7 @@ void BCU::_begin()
     readUserEeprom();
     sendGrpTelEnabled = true;
     groupTelSent = millis();
-    groupTelWaitMillis = 0; // 0 disables limit
+    groupTelWaitMillis = 0; // 0 disables limit, we wait 5ms in orde to reduce power dissipation of the sendig circuit
 }
 
 void BCU::end()
@@ -50,13 +50,17 @@ void BCU::loop()
         return;
     BcuBase::loop();
 
+    // if bus is not sending (telegramm buffer is empty) check for next telegram to be send
     if (sendGrpTelEnabled && !bus.sendingTelegram())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
         {
+        	// check in com_objects method for waiting objects from user app and store in telegrambuffer
+        	// and call bus.sendTelegram
          if (sendNextGroupTelegram())
              groupTelSent = millis();
+
         }
         // To prevent overflows if no telegrams are sent for a long time
         if (elapsed(groupTelSent) >= 2000)
@@ -236,7 +240,7 @@ void BCU::processDirectTelegram(int apci)
     int apciCmd = apci & APCI_GROUP_MASK;
     switch (apciCmd)  // ADC / memory commands use the low bits for data
     {
-    case APCI_ADC_READ_PDU:
+    case APCI_ADC_READ_PDU: // todo adc service  to be implemented for bus voltage and PEI
         index = bus.telegram[7] & 0x3f;  // ADC channel
         count = bus.telegram[8];         // number of samples
         sendTelegram[5] = 0x64;
