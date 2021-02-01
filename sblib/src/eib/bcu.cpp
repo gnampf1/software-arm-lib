@@ -29,7 +29,7 @@ void BCU::_begin()
     readUserEeprom();
     sendGrpTelEnabled = true;
     groupTelSent = millis();
-    groupTelWaitMillis = 0; // 0 disables limit
+    groupTelWaitMillis = 5; // 0 disables limit, we wait 5ms in orde to reduce power dissipation of the sendig circuit
 }
 
 void BCU::end()
@@ -50,13 +50,17 @@ void BCU::loop()
         return;
     BcuBase::loop();
 
+    // if bus is not sending (telegramm buffer is empty) check for next telegram to be send
     if (sendGrpTelEnabled && !bus.sendingTelegram())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
         {
+        	// check in com_objects methode for waiting objects from user app and store in telegrambuffer
+        	// and call bus.sendTelegram
          if (sendNextGroupTelegram())
              groupTelSent = millis();
+
         }
         // To prevent overflows if no telegrams are sent for a long time
         if (elapsed(groupTelSent) >= 2000)

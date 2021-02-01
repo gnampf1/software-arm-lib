@@ -42,7 +42,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
 	_begin();
 #ifdef DUMP_TELEGRAMS
-    serial.begin(115200);
+ //   serial.begin(115200);
     serial.println("Telegram dump enabled");
 #endif
 
@@ -125,23 +125,31 @@ void BcuBase::loop()
 #ifdef DUMP_TELEGRAMS
 	{
     	extern unsigned char telBuffer[];
-    	extern unsigned int telLength ;
+    	extern unsigned int telLength;
+    	extern unsigned int telRXtime;
+    	extern bool telcollision;
+
     	if (telLength > 0)
     	{
-    		serial.print("RCV: ");
-            for (int i = 0; i < telLength; ++i)
-            {
-                if (i) serial.print(" ");
-                serial.print(telBuffer[i], HEX, 2);
-            }
-            serial.println();
-            telLength = 0;
+    		serial.print("RCV: (");
+
+    		serial.print(telRXtime, DEC, 6);
+    		serial.print(") ");
+    		if (telcollision)  serial.print("collision ");
+
+    		for (int i = 0; i < telLength; ++i)
+    		{
+    			if (i) serial.print(" ");
+    			serial.print(telBuffer[i], HEX, 2);
+    		}
+    		serial.println();
+    		telLength = 0;
     	}
 	}
 #endif
 
-    if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
-        processTelegram();
+	if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
+		processTelegram();
 
     if (progPin)
     {
