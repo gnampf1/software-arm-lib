@@ -10,8 +10,8 @@
  * 				- added default phy-adr for normal devices and router (compilation with ROUTER defined)
  * 				- added some states to SM for better readability of the code, Busy handling,...
  * 				- added error handling, convey info to upper layers
- * 				- added local rx buffer for parallel processing of rx telegram and receiving and reply with busy to remote sende
- * 				--added busy acknowledgment handling
+ * 				- added local rx buffer for parallel processing of rx telegram and receiving and reply with busy to remote sender
+ * 				- added busy acknowledgment handling
  * 				- added some debug macros, use of timer32_0 for debugging of state machine timing
  * 				- debugging  with high speed serial terminal interface (1.5Mbaud) at PIO2_7 and PIO2_8
  *
