@@ -231,6 +231,20 @@ int hw_error =0;
 
 #define D(x)
 
+// telegram control byte bit definitions
+#define SB_TEL_ACK_REQ_FLAG 	( 1<< ACK_REQ_FLAG)
+#define SB_TEL_PRIO0_FLAG   	( 1<< PRIO0_FLAG )
+#define SB_TEL_PRIO1_FLAG   	( 1<< PRIO1_FLAG)
+#define SB_TEL_ACK_FRAME_FLAG   ( 1<< ACK_FRAME_FLAG )
+#define SB_TEL_REPEAT_FLAG 		( 1<< REPEAT_FLAG)
+#define SB_TEL_DATA_FRAME_FLAG 	( 1<< DATA_FRAME_FLAG)
+#define SB_TEL_LONG_FRAME_FLAG 	( 1<< LONG_FRAME_FLAG)
+#define SB_TEL_PRIO_FLAG   	    ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
+
+#define PRIO_FLAG_HIGH	 (SB_TEL_PRIO0_FLAG)
+#define PRIO_FLAG_LOW	 (SB_TEL_PRIO0_FLAG |SB_TEL_PRIO1_FLAG )
+
+
 static int debugLine = 0;
 
 #ifdef DUMP_TELEGRAMS

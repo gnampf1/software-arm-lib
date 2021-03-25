@@ -25,7 +25,7 @@
 static inline void lib_setup()
 {
 	// Configure the system timer to call SysTick_Handler once every 1 msec
-	SysTick_Config(SystemCoreClock / 1000);
+	SysTick_Config(SystemCoreClock / 1000)-1;
 	systemTime = 0;
   /*  serial.print(" libsetup Systemclock: ");
 	serial.print((unsigned int)SystemCoreClock, DEC, 9);
@@ -57,7 +57,6 @@ int main()
 	while (1)
 	{
 		bcu.loop();
-
 		if (bcu.applicationRunning())
 			loop();
 		else
