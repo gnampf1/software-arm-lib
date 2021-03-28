@@ -880,6 +880,7 @@
 								<option id="gnu.cpp.compiler.option.preprocessor.def.380545445" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
 									<listOptionValue builtIn="false" value="DEBUG_BUS"/>
+									<listOptionValue builtIn="false" value="DEBUG_BUS_BITLEVEL"/>
 									<listOptionValue builtIn="false" value="DEBUG_COM_OBJ"/>
 									<listOptionValue builtIn="false" value="DUMP_TELEGRAMS"/>
 									<listOptionValue builtIn="false" value="DUMP_TELEGRAMS_BUS"/>
@@ -899,7 +900,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.cpp.lib.debug.option.optimization.level.1458051219" name="Optimization Level" superClass="com.crt.advproject.cpp.lib.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.option.warnings.allwarn.500439846" name="All warnings (-Wall)" superClass="gnu.cpp.compiler.option.warnings.allwarn" useByScannerDiscovery="false" value="false" valueType="boolean"/>
+								<option id="gnu.cpp.compiler.option.warnings.allwarn.500439846" name="All warnings (-Wall)" superClass="gnu.cpp.compiler.option.warnings.allwarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.crt.advproject.cpp.specs.67454688" name="Specs" superClass="com.crt.advproject.cpp.specs" useByScannerDiscovery="false" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.469903833" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>

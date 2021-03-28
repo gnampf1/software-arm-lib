@@ -15,10 +15,34 @@
  * 				- added some debug macros, use of timer32_0 for debugging of state machine timing
  * 				- debugging  with high speed serial terminal interface (1.5Mbaud) at PIO2_7 and PIO2_8
  *
+ * Functions supported by this module:
+ *   - Supported frames:  standard data frame, acknowledge frame. Poll frame  and extended  frame are  not supported
+ *   - Bus-Busy detection for start of normal frames and ack-frames
+ *   - Collision detection for all send bytes, no support for receiving of remaining telegram after collision, rx telegram is discarded.
+ *   - Extended colliision detection for Ack frame due to possible parallel sending of devices and bus delay
+ *   - repetition of telegram after NACK, no Ack or busy-ack after idle time (50bit) or busy wait (150bit)
+ *   - sending busy ack to remote if rx-buffer is not free (higher layer still processing last telegram)
+ *   - support of ETS provided repeat value for normal repeat and busy repeat  (loaded from EPROM)
+ *   - support of default phy addr (15.15.253) for normal device in case of uninitialized phy. addr. 0.0.0 from EPROM, 0.0.0 is
+ *     only allowed for a Router device
+ *   -
+ *
  * The used timer should have the highest priority of the used interrupts in the lib and the app!
  * As the prio is set at reset to the highest level for all peripheral interrupt sources, any used peripheral interrupt should be set to
  * a lower level by a call of the CMSIS "void NVIC_SetPriority (IRQn_t IRQn, uint32_t priority)" function with respective IRQn
  * and a prio >0 (0 is the highest level for periph.).
+ *
+ * Suport for debugging with some macros and dumping of data on the serial line - ports will be mapped in the serial.cpp module
+ * and serial support need to be started with a high baud rate (recommended 1.5Mb) in the app module. Usage of timer32_0 for
+ * measurement
+ *
+ ** Compile time switches:
+ *  ROUTER :  				Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
+ *  DEBUG_BUS:			enable dumping of state machine interrupt data e.g timer values, mapping of ports in serial.cpp
+ *  DEBUG_BUS_BITLEVEL	 extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow
+ *  						of the debug buffer
+ *  DUMP_TELEGRAMS		dump received and sending telegram data
+ *
  *
  **
  * Interface to upper layers:
@@ -194,7 +218,8 @@
  * Data Link Layer receive
  *  A received frame should be processed only if it is addressed to the own phy. Address or Group Addr. found in the addr. table
  *   or (broadcast) Group Addr. zero  (not appl. to BUS Monitor etc). If the frame is for us and:
- *   -If the received frame is not correct (parity/checksum,length...error) a NACK should be sent to remote device ???Dest addr could be wrong???.
+ *   -If the received frame is not correct (parity/checksum,length...error) a NACK should be sent to remote device ???Dest
+ *    addr could be wrong???.
  *   -If frame is correct but the device is busy (e.g. input queue full,...) a BUSY should be sent to remote device
  *   -If frame is correct an ACK should be sent
  *
@@ -220,32 +245,16 @@
 #include <sblib/timer.h>
 
 
-// Enable debug statements for debugging the bus access in this file
+// Enable informational debug statements
 #ifdef DEBUG_BUS
 #define DB(x) x
-
 int hw_error =0;
 #else
 #define DB(x)
 #endif
 
+// pin output macros for debugging with e.g logic analyser
 #define D(x)
-
-// telegram control byte bit definitions
-#define SB_TEL_ACK_REQ_FLAG 	( 1<< ACK_REQ_FLAG)
-#define SB_TEL_PRIO0_FLAG   	( 1<< PRIO0_FLAG )
-#define SB_TEL_PRIO1_FLAG   	( 1<< PRIO1_FLAG)
-#define SB_TEL_ACK_FRAME_FLAG   ( 1<< ACK_FRAME_FLAG )
-#define SB_TEL_REPEAT_FLAG 		( 1<< REPEAT_FLAG)
-#define SB_TEL_DATA_FRAME_FLAG 	( 1<< DATA_FRAME_FLAG)
-#define SB_TEL_LONG_FRAME_FLAG 	( 1<< LONG_FRAME_FLAG)
-#define SB_TEL_PRIO_FLAG   	    ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
-
-#define PRIO_FLAG_HIGH	 (SB_TEL_PRIO0_FLAG)
-#define PRIO_FLAG_LOW	 (SB_TEL_PRIO0_FLAG |SB_TEL_PRIO1_FLAG )
-
-
-static int debugLine = 0;
 
 #ifdef DUMP_TELEGRAMS
 volatile unsigned char telBuffer[32];
@@ -258,51 +267,56 @@ volatile unsigned int db_state= 2000;
 #ifdef DEBUG_BUS
 volatile unsigned int b1=0, b2=0, b3=0, b4=0;
 volatile unsigned short b5=0;
-volatile  struct s_td td_b[tb_lngth];
+volatile struct s_td td_b[tb_lngth];
 volatile unsigned int tb_in = 0;
 volatile unsigned int tb_out = 0;
 volatile unsigned int tbd = 0;
 volatile bool  tb_in_ov = false;
 volatile bool  rec_end = false;
 
-//#define tbint(s, t, ptc, ptcv, pttv, pttmv,  i) ;
+
+#ifdef DEBUG_BUS_BITLEVEL
+
+//dump each interrupt with timer data
+#define tbint(d1, d2, d3, d4, d5, d6,  i)  \
+	td_b[i].ts=d1; td_b[i].tt=d2; td_b[i].tc=d3; td_b[i].tcv=d4; td_b[i].ttv=d5; td_b[i].ttmv=d6;\
+	 if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
+
+#else
+//dump on bit level only first bit interrupt to reduce OVF
 #define tbint(s, t, cf, cv, tv, tmv,  i) \
 	if (!( (s==8004 || s==8010 )&& !rec_end) ) {\
 		td_b[i].ts=s;  if(s==8003 || s==8010) rec_end = true; else rec_end=false;\
 		td_b[i].tt=t; td_b[i].tc=cf; td_b[i].tcv=cv; td_b[i].ttv=tv; td_b[i].ttmv=tmv;  if (++i>=tb_lngth){ i=0; tb_in_ov = true;} }
+#endif
 
+// dump telegram data in array
 #define tb2(s, ptc, t,  ptcv, pttv, pttmv,  i) td_b[i].ts=s; \
 		td_b[i].tt=t; td_b[i].tc=ptc; td_b[i].tcv=ptcv; td_b[i].ttv=pttv; td_b[i].ttmv=pttmv;  if ( ++i>=tb_lngth){ i=0; tb_in_ov = true;}
 
+//dump a timer value
 //#define tb_t(s, t,  i ) td_b[i].ts=s+2000; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
 #define tb_t(s, t,  i ) ;
 
+// dump a hex value
 #define tb_h(s, t,  i ) td_b[i].ts=s+4000; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
 //#define tb_h(s, t,  i ) ;
 
+// dump a decimal value
 #define tb_d(s, t,  i ) td_b[i].ts=s+5000; td_b[i].tt=t;  if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
 //#define tb_d(s, t,  i ) ;
-
-#define tb4(s, t,  i ) td_b[i].ts=s; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-//#define tb4(s, t,  i ) ;
-
-#define tb0(s, t, ptc, ptcv, pttv, i) td_b[i].ts=s; td_b[i].tt=t; \
-		td_b[i].tc=ptc; td_b[i].tcv=ptcv; td_b[i].ttv=pttv; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
 
 extern Timer timer32_0;
 
 #else
-#define tb0(s, t, ptc, ptcv, pttv, i);
-#define tb1(s, t, ptc, ptcv, pttv, pttmv,  i) ;
+// no dump at all
 #define tb2(s, ptc, t,  ptcv, pttv, pttmv,  i);
 #define tb_t(s, t,  i ) ;
 #define tb_h(s, t,  i ) ;
 #define tb_d(s, t,  i ) ;
-#define tb4(s, t,  i ) ;
 #endif
 
 
-//#define NO_START_BIT_DETECTED  1	// hw error during sending of the start bit - is not received at capture input
 
 /* L1/L2 msg header control field data bits meaning */
 #define ALLWAYS0       	   0          //  bit 0 is always 0
@@ -326,19 +340,14 @@ extern Timer timer32_0;
 #define SB_TEL_LONG_FRAME_FLAG 	( 1<< LONG_FRAME_FLAG)
 #define SB_TEL_PRIO_FLAG   	    ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
 
-#define VALID_DATA_FRAME_TYPE_MASK 	(SB_TEL_LONG_FRAME_FLAG | SB_TEL_DATA_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG |  SB_TEL_NULL_FLAG)
-#define VALID_DATA_FRAME_TYPE_VALUE  (SB_TEL_LONG_FRAME_FLAG | !SB_TEL_DATA_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG |  !SB_TEL_NULL_FLAG)
+#define VALID_DATA_FRAME_TYPE_MASK (SB_TEL_LONG_FRAME_FLAG | SB_TEL_DATA_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG | SB_TEL_NULL_FLAG)
+#define VALID_DATA_FRAME_TYPE_VALUE  (SB_TEL_LONG_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG )
 
 #define PRIO_FLAG_HIGH	 (SB_TEL_PRIO0_FLAG)
-#define PRIO_FLAG_LOW	 (SB_TEL_PRIO0_FLAG |SB_TEL_PRIO1_FLAG )
+#define PRIO_FLAG_LOW	 (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
 
-// after TX wait for ack reception from remote side
-#define RX_ACK_WAIT_TIME_MAX  15* BIT_TIME +30 // we wait 15*BT -5 min,   1560 +30us max
-#define RX_ACK_WAIT_TIME_MIN  15* BIT_TIME -5 //
 
-#define BUS_BUSY_DETECTION_FRAME 7 // >=7 us before start bit check for bus busy for normal frame
-#define BUS_BUSY_DETECTION_ACK 16 // >=16 us before start bit check for bus busy for ACK frame
-
+//  **************define some  flags and timing values based on the knx spec ***********
 
 // Mask for the timer flag of the capture channel
 #define CAPTURE_FLAG (8 << captureChannel)
@@ -346,17 +355,25 @@ extern Timer timer32_0;
 // Mask for the timer flag of the time channel
 #define TIME_FLAG (8 << timeChannel)
 
+
+// after TX wait for ack reception from remote side
+#define RX_ACK_WAIT_TIME_MAX  15* BIT_TIME +30 // we wait 15*BT -5 min,   1560 +30us max
+#define RX_ACK_WAIT_TIME_MIN  15* BIT_TIME -5 //
+
+#define BUS_BUSY_DETECTION_FRAME 7  // >=7 us before start bit check for bus busy for normal frame
+#define BUS_BUSY_DETECTION_ACK 16 // >=16 us before start bit check for bus busy for ACK frame
+
 // Default time between two bits (104 usec)
 #define BIT_TIME 104
 
-// Time between two bits (69 usec)
+// Time between two bits (69 usec) - high level part of the pulse on the bus
 #define BIT_WAIT_TIME 69
 
 // Pulse duration of a bit (35 usec)
 #define BIT_PULSE_TIME 35
 
 // Maximum time from start bit to stop bit, including a safety extra: BIT_TIME*10 + BIT_TIME/2
-#define BYTE_TIME 1090
+//#define BYTE_TIME 1090
 
 // Maximum time from start bit to end of stop bit: BIT_TIME*11
 #define BYTE_TIME_INCL_STOP 1144
@@ -364,10 +381,10 @@ extern Timer timer32_0;
 // Maximum time from start bit to start of stop bit: BIT_TIME*10
 #define BYTE_TIME_EXCL_STOP 1040
 
-// Maximum time from start bit to next bytes start bit  + 13*104 +30
+// Maximum time from start bit to next bytes start bit  + 13*104 +30 margin
 #define START_BIT_BYTE_TIME_MAX 1382
 
-// Maximum time from end of stop bit to start bit of next byte 2 Bit time + 100us marging
+// Maximum time from end of stop bit to start bit of next byte 2 Bit time + 100us marging = timeout for end of telegram
 #define MAX_INTER_CHAR_TIME 308
 
 // Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
@@ -376,7 +393,9 @@ extern Timer timer32_0;
 // Time to wait  for window to prepare  sending an ACK  15* BIT Time: approximately - 69us should be enough
 #define SEND_ACK_WINDOW_START_TIME  SEND_ACK_WAIT_TIME  -  BIT_WAIT_TIME
 
-//  for rx process: Time from end of stop bit  to start of ACK = 15* bit time -5us/+30us acc to spec, we add add marging of 100us
+//  for rx process: Time from end of stop bit  to start of ACK = 15* bit time -5us/+30us acc to spec,
+//we add add marging of 100us as we have seen some early acks on the bus
+//
 #define ACK_WAIT_TIME_MIN 15*BIT_TIME-5 - 100
 #define ACK_WAIT_TIME_MAX 15*BIT_TIME+30 +100
 
@@ -404,9 +423,7 @@ Bus::Bus(Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, Ti
 ,captureChannel(aCaptureChannel)
 ,pwmChannel(aPwmChannel)
 
-#ifdef DEBUG_BUS
-,ttimer (timer32_0)
-#endif
+
 {
 	timeChannel = (TimerMatch) ((pwmChannel + 2) & 3);  // +2 to be compatible to old code during refactoring
 	state = Bus::INIT;
@@ -458,7 +475,7 @@ void Bus::begin()
 	timer.pwmEnable(pwmChannel);
 	// any cap intr during start up time is ignored and will reset start up time
 	timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // enabled the  timer reset by the falling edge of cap event
+	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo  enabled the  timer reset by the falling edge of cap event
 	timer.start();
 	timer.interrupts();
 	timer.prescaler(TIMER_PRESCALER);
@@ -495,15 +512,15 @@ void Bus::begin()
 	//
 	// Init GPIOs for debugging ?? logic analyser???
 	//
-	D(pinMode(PIO3_0, OUTPUT));
-	D(pinMode(PIO3_1, OUTPUT));
+	D(digitalWrite(PIO3_1, 1));
+	D(digitalWrite(PIO3_0, 1));
+
 	D(pinMode(PIO1_5, OUTPUT));
 	D(pinMode(PIO1_4, OUTPUT));
 	D(pinMode(PIO0_6, OUTPUT));
 	D(pinMode(PIO0_7, OUTPUT));
 	//D(pinMode(PIO2_8, OUTPUT));
 	//D(pinMode(PIO2_9, OUTPUT));
-	//D(pinMode(PIO2_10, OUTPUT));
 
 	D(digitalWrite(PIO3_0, 0));
 	D(digitalWrite(PIO3_1, 0));
@@ -564,7 +581,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	else if (!sendNextTel) sendNextTel = telegram;
 	else fatalError();   // soft fault: send buffer overflow
 
-#ifdef DUMP_TELEGRAMS_BUS_
+#ifdef DUMP_TELEGRAMS_BUS
 	unsigned int t;
 	t= ttimer.value();
 	serial.println();
@@ -613,7 +630,7 @@ void Bus::idleState()
 	timer.matchMode(timeChannel, RESET); // no timeout interrupt, reset at match todo we could stop timer for power saving
 	timer.match(timeChannel, 0xfffe); // stop pwm pulse generation, set output to low
 	timer.match(pwmChannel, 0xffff);
-	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // enabled the  timer reset by the falling edge of cap event
+	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo enabled the  timer reset by the falling edge of cap event
 	state = Bus::IDLE;
 	sendAck = 0;
 }
@@ -694,12 +711,12 @@ void Bus::handleTelegram(bool valid)
 
 		// We ACK the telegram only if it's for us
 		if (rx_telegram[5] & 0x80) // groupr addr or phy addr
-
+		{
 			if (destAddr == 0 || indexOfAddr(destAddr) >= 0)
 				processTel = true; // broadcast or known group addr
 			else if (destAddr == ownAddr)
 				processTel = true;
-
+		}
 		// Only process the telegram if it is for us or if we want to get all telegrams
 		if (!(userRam.status & BCU_STATUS_TL))
 		{ // TL is disabled we might process the telegram
@@ -747,7 +764,6 @@ void Bus::handleTelegram(bool valid)
 		currentByte &= 0xff;
 		tb_h( 907, currentByte, tb_in);
 		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
-		// todo we need to check if the remote side send a BUSY as answer back and we requested the remote to send ack back
 		if ( wait_for_ack_from_remote) {
 			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
 			{ // last sending  to remote was ok, prepare for next tx telegram
@@ -804,11 +820,11 @@ void Bus::sendNextTelegram()
 }
 
 
-/*
+/**
  * State Machine - driven by interrupts of timer and capture input
  *
- * Interrupt prolog  (from event at cap pin or timer match) takes about 5us processing time (incl SM state select)
- *  Selecting the right state of SM yus
+ * Interrupt prolog  (from event at cap pin or timer match) takes about 3-5us processing time (incl SM state select)
+ *  Selecting the right state of SM ?us
  *
  */
 void Bus::timerInterruptHandler()
@@ -827,11 +843,14 @@ void Bus::timerInterruptHandler()
 	//    D(digitalWrite(PIO2_9, 0));           //
 
 	// debug processing takes about 7-8us
+#ifdef DEBUG_BUS
 	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+#endif
 
 	STATE_SWITCH:
 	switch (state)
 	{
+
 	// BCU is in start-up phase, we wait for 50 bits inactivity of the bus
 	case Bus::INIT:
 		tb_t( state, ttimer.value(), tb_in);
@@ -849,8 +868,8 @@ void Bus::timerInterruptHandler()
 		// The bus is idle. Usually we come here when there is a capture event on bus-in, we continue with initializing the RX process.
 		//A timeout  (after 0xfffe us) should not be received.!!( indicating no bus activity) match interrupt is disabled
 	case Bus::IDLE:
-		tb_t( IDLE, ttimer.value(), tb_in);
 		tb_d( state+100, ttimer.value(), tb_in);
+
 		if (!timer.flag(captureChannel)) // Not a bus-in signal: do nothing - timeout??
 			break;
 		nextByteIndex = 0;
@@ -868,8 +887,6 @@ void Bus::timerInterruptHandler()
 		// transmission of a frame is over.  (after 11  bit plus 2 fill bits :13*104us +30us + margin after start of last char)
 		// we expect that the timer was  not restarted by a cap event  )
 	case Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND:
-		//DB(db_state= state);
-		//tb_t(RECV_WAIT_FOR_STARTBIT_OR_TELEND , ttimer.value(), tb_in);
 		D(digitalWrite(PIO3_1, 1));   // orange
 
 		if (!timer.flag(captureChannel))  // No start bit: then it is a timeout of end of frame
@@ -887,7 +904,7 @@ void Bus::timerInterruptHandler()
 
 		// we received a start bit interrupt - reset timer for next byte reception,
 		// set byte time incl stop bit to 1144us and use that as ref for all succeeding timings in RX process
-		//  any rx-bit start should be  within n*104 -7us, n*104 + 33us -> max 1177us
+		// any rx-bit start should be within n*104 -7us, n*104 + 33us -> max 1177us
 		// correct the timer start value by the process time (about 13us) we had since the capture event
 		//todo  restart timer by cap  in order to have a ref point for the frame timeout (11 bit
 		unsigned int dt, tv, cv;
@@ -909,8 +926,6 @@ void Bus::timerInterruptHandler()
 
 		// we received next capture event for a low bit at position n*104us or timeout if we have end of byte received
 	case Bus::RECV_BITS_OF_BYTE:
-		//		DB(db_state= state);
-		//tb( state, ttimer.value(), timer.flag(captureChannel), timer.capture(captureChannel), timer.value(), tb_in);
 		//tb_t( RECV_BITS_OF_BYTE, ttimer.value(), tb_in);
 
 		timeout = timer.flag(timeChannel); // end of rx byte
@@ -970,19 +985,18 @@ void Bus::timerInterruptHandler()
 		//tb_h( RECV_BITS_OF_BYTE +200, rx_error, tb_in);
 		break;
 
-
 		//We arrive here after a telegram was received and we probably need to send an ACK back to remote side or continue waiting
 		//ACK tx/rx  windows starts now after the timeout event
 		// enable cap event and wait for sending  ACK or receiving ack
 	case Bus::RECV_WAIT_FOR_TX_ACK_WINDOW:
 		tb_t( state, ttimer.value(), tb_in);
+
 		state = Bus::RECV_WAIT_FOR_ACK_TX_START;
 		timer.match(timeChannel, SEND_ACK_WAIT_TIME - PRE_SEND_TIME); // we wait 15BT for our ack tx , cap intr enabled
 		timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // we might receive an ack if the last rx-msg was a broadcast
 		//todo disable cap event,   possible ack will be capture in send-startbit
 		timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer at ack start bit time -PRE_SEND_TIME
 		break;
-
 
 		// timeout: we waited 15BT - PRE_SEND_TIME after rx process, start sending an ack
 		// timer was reseted by match for ref for tx process
@@ -1007,9 +1021,10 @@ void Bus::timerInterruptHandler()
 		state = Bus::SEND_START_BIT;
 		break;
 
+
 		/**
 		 * ************Sending states**************
-		 * To allow for the use of the timer PWM generator, the timing of the  sending process is in phase shift of -69us with respect to
+		 * To allow for the use of the timer PWM generator, the timing of the sending process is in phase shift of -69us with respect to
 		 * normal bit start: The PWM pulse starts at -69us, high pulse phase starts at 0us, pulse high end at 35us ->period is 104us. In order to be
 		 * in sync with the bus after a complete telegram is send we need to correct the timing again by the phase shift.
 		 *
@@ -1031,10 +1046,9 @@ void Bus::timerInterruptHandler()
 		 **/
 
 	case Bus::WAIT_FOR_NEXT_RX_OR_PENDING_TX:
-		//DB(db_state= state);
-		//tb( state, ttimer.value(), timer.flag(captureChannel), timer.capture(captureChannel), timer.value(), tb_in);
 		tb_t( state, ttimer.value(), tb_in);
 		D(digitalWrite(PIO1_5, 1)); // yellow: prepare transmission
+
 		timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // enable cap event after waiting time  for next rx
 
 		if (timer.flag(captureChannel)){ // cap event- start receiving,  maybe ack or early tx from other device
@@ -1112,10 +1126,11 @@ void Bus::timerInterruptHandler()
 			// We will receive our own start bit here too.
 			if ((( timer.capture(captureChannel)< timer.match(pwmChannel) - BUS_BUSY_DETECTION_FRAME)&& !sendAck )||
 					((timer.capture(captureChannel) < timer.match(pwmChannel) - BUS_BUSY_DETECTION_ACK) && sendAck)) // optional
-			{ // received edge of bit before our own bit was triggered - go to receiving process
-				//tb( state*10+1, ttimer.value(), timer.flag(captureChannel), timer.capture(captureChannel), timer.value(), tb_in);
+			{
+				// received edge of bit before our own bit was triggered - go to receiving process
 				tb_d( state+300, ttimer.value(), tb_in);
 				timer.match(pwmChannel, 0xffff); // stop our bit  set pwm output to low
+
 				// correct the timer start value by the process time (about 13us) we had since the capture event
 				unsigned int dt, tv, cv;
 				tv=timer.value(); cv= timer.capture(captureChannel);
@@ -1152,6 +1167,7 @@ void Bus::timerInterruptHandler()
 	case Bus::SEND_BIT_0:
 		//tb_d( state+100, timer.match (pwmChannel), tb_in);
 		// get byte to send
+
 		if (sendAck){
 			currentByte = sendAck;
 		}
@@ -1233,11 +1249,10 @@ void Bus::timerInterruptHandler()
 		 *  Timeout event indicated a bus timing error
 		 **/
 	case Bus::SEND_WAIT_FOR_HIGH_BIT_END:
-		//	DB(db_state= state);
-		//tb( state, ttimer.value(), timer.flag(captureChannel), timer.capture(captureChannel), timer.value(), tb_in);
 		//tb_t( state, ttimer.value(), tb_in);
 		//tb_d( state+100,timer.match(pwmChannel), tb_in);
 		//tb_h( SEND_WAIT_FOR_HIGH_BIT_END+200, timer.captureMode(captureChannel),  tb_in);
+
 		if (timer.flag(captureChannel)){
 			if (( timer.capture(captureChannel) < timer.match(pwmChannel) - BIT_WAIT_TIME +30 ) &&  // add bit margin: early 7us, late 30us
 					(timer.capture(captureChannel) > BIT_WAIT_TIME - 7))  // subtract 7 margin for early bit
@@ -1248,8 +1263,6 @@ void Bus::timerInterruptHandler()
 				D(digitalWrite(PIO1_4, 1));  // purple
 				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
 				timer.match(timeChannel, BYTE_TIME_INCL_STOP); // todo we could set the timeout to the time value for remaining bits to receive
-				//timer.matchMode(timeChannel, INTERRUPT | RESET);
-				//timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT); // next state interrupt at start bit  - falling edge, no reset
 				state = Bus::RECV_BITS_OF_BYTE; // -  try to receive remaining bits of sender - will be discard anyhow, just to be in sync again
 				collision = true;
 				tx_error |= TX_COLLISION_ERROR;
@@ -1267,7 +1280,6 @@ void Bus::timerInterruptHandler()
 		state = Bus::SEND_BITS_OF_BYTE;
 		tx_error |= TX_TIMING_ERROR;
 		goto STATE_SWITCH;
-		//tb( state*10+1, ttimer.value(), timer.flag(captureChannel), timer.capture(captureChannel), timer.value(), tb_in);
 		//tb_t( state*+300, ttimer.value(), tb_in);
 		break;
 
@@ -1275,10 +1287,10 @@ void Bus::timerInterruptHandler()
 		// for normal frames we should wait for ack from remote layer2 after ack-waiting time
 		// timer was reset
 	case Bus::SEND_END_OF_TX:
-		//DB(db_state= state);
 		tb_t( state, ttimer.value(), tb_in);
 		tb_h( state+100, tx_error, tb_in);
 		D(digitalWrite(PIO2_9, 1));
+
 		//wait_for_ack_from_remote = true; // default   for data layer: send ack back to remote
 		state= Bus::WAIT_FOR_NEXT_RX_OR_PENDING_TX;
 		time =  SEND_WAIT_TIME - PRE_SEND_TIME;// we wait 50 BT- pre-send-time for next rx/tx window, cap intr disabled
@@ -1288,7 +1300,9 @@ void Bus::timerInterruptHandler()
 			need_to_send_ack_to_remote = false;
 			tb_h( SEND_END_OF_TX+200, tx_error, tb_in);
 			// todo inform receiving process of pos ack tx
-		}else { // normal data frame, check for ack request for our telegram
+		}else
+		{
+			// normal data frame, check for ack request for our telegram
 			if (!(sendCurTelegram[0] & SB_TEL_ACK_REQ_FLAG)) {
 				wait_for_ack_from_remote = true; // default   for data layer: send ack back to remote
 				time=  ACK_WAIT_TIME_MIN; //we wait 15BT- marging for ack rx window, cap intr disabled
@@ -1313,6 +1327,7 @@ void Bus::timerInterruptHandler()
 		// enable cap event and wait till end of ACK receive window for the ACK
 	case Bus::SEND_WAIT_FOR_RX_ACK_WINDOW:
 		tb_t( state, ttimer.value(), tb_in);
+
 		state = Bus::SEND_WAIT_FOR_RX_ACK;
 		//timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
 		//		timer.counterMode(DISABLE,  captureChannel  | FALLING_EDGE); // enabled the  timer reset by the falling edge of cap event
@@ -1324,6 +1339,7 @@ void Bus::timerInterruptHandler()
 		// to start a repetition of the last telegram
 	case Bus::SEND_WAIT_FOR_RX_ACK:
 		tb_t( state, ttimer.value(), tb_in);
+
 		if (timer.flag(captureChannel)){
 			state = Bus::IDLE;  // start bit of ack received - continue rx process for rest of byte
 			goto STATE_SWITCH;

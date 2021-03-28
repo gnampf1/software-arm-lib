@@ -122,9 +122,10 @@ void BcuBase::loop()
 	if (!enabled)
 		return;
 
+
 #ifdef DUMP_TELEGRAMS
 	extern unsigned char telBuffer[];
-	extern unsigned int telLength, db_state;
+	extern unsigned int telLength ; // db_state;
 	extern unsigned int telRXtime;
 	extern bool telcollision;
 
@@ -137,7 +138,7 @@ void BcuBase::loop()
 		serial.print(") ");
 		if (telcollision)  serial.print("collision ");
 
-		for (int i = 0; i < telLength; ++i)
+		for (unsigned int i = 0; i < telLength; ++i)
 		{
 			if (i) serial.print(" ");
 			serial.print(telBuffer[i], HEX, 2);
@@ -157,7 +158,7 @@ void BcuBase::loop()
 	//9000 - rx tel data values
 
 
-	static unsigned int t,l, l1, lt,lt1, s, ls, cv,tv, tmv;
+	static unsigned int t,l, l1, lt,lt1, s, cv,tv, tmv;
 	bool cf;
 	l=0; l1=0;
 	//while (tb_in != tb_out && l1 < 10) {
