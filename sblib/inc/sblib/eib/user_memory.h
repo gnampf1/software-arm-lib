@@ -10,6 +10,7 @@
 #ifndef sblib_user_memory_h
 #define sblib_user_memory_h
 
+#include <sblib/config.h>
 #include <sblib/types.h>
 #include <sblib/eib/bcu_type.h>
 

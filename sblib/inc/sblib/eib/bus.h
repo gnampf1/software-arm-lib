@@ -17,8 +17,13 @@
 #include <sblib/eib/bcu_type.h>
 
 // dump all received and sent telegrams out on the serial interface
-#ifdef DUMP_TELEGRAMS
+#if defined (DUMP_TELEGRAMS) || defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
+
 #include <sblib/serial.h>
+
+#endif
+
+#if defined (DUMP_TELEGRAMS) || defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
 
 struct s_td {
 	unsigned short ts; // state
@@ -186,6 +191,8 @@ public:
 
     /**
      * Set weather the an acknowledgment from the last received byte should be sent.
+     * !!!!!!! critical as this could change the sendAck value during usage in the  SM - should be not used outside the bus SM!!
+     *  not needed as the SM should check the bit1 in the telegram header to check if the sender is requesting an ACK
      */
     void setSendAck(int sendAck);
 
@@ -206,7 +213,7 @@ public:
     void maxSendBusyTries(int tries);
 
 
-    /** The state of the telegram sending/receiving */
+    /** The states of the telegram sending/receiving state machine */
     enum State
     {
 
@@ -236,6 +243,7 @@ public:
 
     /**
      * The received telegram.
+     * The higher layer process should not change the telegram data in the buffer!
      */
     byte telegram[TELEGRAM_SIZE];
 
@@ -254,6 +262,10 @@ public:
         */
        volatile int bus_tx_state;
 
+
+#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
+    Timer& ttimer = timer32_0;                //!< The debug timer for SM timing
+#endif
 
 
 private:
@@ -302,10 +314,6 @@ private:
 
 protected:
     friend class BcuBase;
-
-#ifdef DEBUG_BUS
-    Timer& ttimer = timer32_0;                //!< The debug timer for SM timing
-#endif
     Timer& timer;                //!< The timer
     int rxPin, txPin;            //!< The pins for bus receiving and sending
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
@@ -336,12 +344,13 @@ private:
     unsigned short rx_error;	// hold the rx error flags of the rx process of the state machine
     unsigned short tx_error;	// hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; // sending process is requesting an ack from remote side
-    bool need_to_send_ack_to_remote; // receiving process need to send ack to remote sending side
+   // bool need_to_send_ack_to_remote; // receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; // remote side is busy, re-send telegram after 150bit time wait
-    bool busy_wait_to_remote; // receiving process/ upper layer busy, send busy to remote sender
+   // bool busy_wait_to_remote; // receiving process/ upper layer busy, send busy to remote sender
     bool repeated;              // A send telegram is repeated
     bool repeatTelegram;        // need to repeat last  telegram sent
     bool collision;              // A collision occurred
+    unsigned int lastRXTimeVal; // time measurement between telegrams - last SysTime value
 
 
 };

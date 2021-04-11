@@ -3,6 +3,10 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *  last change: 10. April 2021 HoRa:
+ *  	call to bus:setSendAck() in "connect/disconnect command at Layer4" removed- not needed, will lead to undefined effects when the
+ *  	bus state machine is sending an ack in parallel due to asynchronous interrupt process
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -19,6 +23,14 @@
 
 #if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS
 #include <sblib/serial.h>
+
+// Enable informational debug statements
+#if defined (DEBUG_BUS) || defined (DUMP_TELEGRAMS)
+#define DB(x) x
+#else
+#define DB(x)
+#endif
+
 #endif
 
 extern unsigned int writeUserEepromTime;
@@ -115,6 +127,10 @@ void BCU::processTelegram()
     unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
     unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
+
+    DB(serial.println());
+	DB(serial.print("BCU1: ");)
+	DB(serial.println((unsigned int)destAddr, HEX, 4);)
 
     if (destAddr == 0) // a broadcast
     {
@@ -477,7 +493,7 @@ void BCU::processConControlTelegram(int tpci)
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
                 lastAckSeqNo = -1;
-                bus.setSendAck (0);
+                //bus.setSendAck (0); // todo check in spec if needed
             }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
@@ -485,7 +501,7 @@ void BCU::processConControlTelegram(int tpci)
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
-                bus.setSendAck (0);
+                //bus.setSendAck (0);  // todo check in spec if needed
             }
         }
     }

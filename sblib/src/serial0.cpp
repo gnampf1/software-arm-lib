@@ -10,9 +10,10 @@
 
 #include <sblib/serial.h>
 #include <sblib/digital_pin.h>
+#include <sblib/core.h>
 
 #if defined (__LPC11XX__)
-#if defined (DEBUG_BUS)
+#if defined (SERIAL_DEBUG_PORT)
 Serial serial(PIO2_7, PIO2_8);
 #else
 Serial serial(PIO1_6, PIO1_7);

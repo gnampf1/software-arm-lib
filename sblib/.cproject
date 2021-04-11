@@ -849,7 +849,7 @@
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096" moduleId="org.eclipse.cdt.core.settings" name="Debug_BCU1_OUT8_bistable">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096" moduleId="org.eclipse.cdt.core.settings" name="Debug_LIB_BCU1_OUT8_bistable">
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
@@ -868,7 +868,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="a" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib" cleanCommand="rm -rf" description="Debug config for the Out8-16A bistable actor, RX/TX on PIO2_7,PIO2_8" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096" name="Debug_BCU1_OUT8_bistable" parent="com.crt.advproject.config.lib.debug" postannouncebuildStep="Performing post-build steps" postbuildStep="arm-none-eabi-size &quot;lib${BuildArtifactFileName}&quot; ; # arm-none-eabi-objdump -h -S &quot;lib${BuildArtifactFileName}&quot; &gt;&quot;${BuildArtifactFileBaseName}.lss&quot;" preannouncebuildStep="" prebuildStep="">
+				<configuration artifactExtension="a" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.staticLib" cleanCommand="rm -rf" description="Debug config for the slib using the Out8-16A bistable actor app , RX/TX on PIO2_7,PIO2_8" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096" name="Debug_LIB_BCU1_OUT8_bistable" parent="com.crt.advproject.config.lib.debug" postannouncebuildStep="Performing post-build steps" postbuildStep="arm-none-eabi-size &quot;lib${BuildArtifactFileName}&quot; ; # arm-none-eabi-objdump -h -S &quot;lib${BuildArtifactFileName}&quot; &gt;&quot;${BuildArtifactFileBaseName}.lss&quot;" preannouncebuildStep="" prebuildStep="">
 					<folderInfo id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096." name="/" resourcePath="">
 						<toolChain errorParsers="" id="com.crt.advproject.toolchain.lib.debug.1312903639" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.lib.debug">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.lib.debug.977763192" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.lib.debug"/>
@@ -879,12 +879,6 @@
 								<option id="com.crt.advproject.cpp.hdrlib.200711879" name="Library headers" superClass="com.crt.advproject.cpp.hdrlib" useByScannerDiscovery="false"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.380545445" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
-									<listOptionValue builtIn="false" value="DEBUG_BUS"/>
-									<listOptionValue builtIn="false" value="DEBUG_BUS_BITLEVEL"/>
-									<listOptionValue builtIn="false" value="DEBUG_COM_OBJ"/>
-									<listOptionValue builtIn="false" value="DUMP_TELEGRAMS"/>
-									<listOptionValue builtIn="false" value="DUMP_TELEGRAMS_BUS"/>
-									<listOptionValue builtIn="false" value="DUMP_MEM_OPS"/>
 									<listOptionValue builtIn="false" value="DEBUG_OUT8_BI"/>
 									<listOptionValue builtIn="false" value="SPI_BLOCK_TRANSFER"/>
 									<listOptionValue builtIn="false" value="BCU_TYPE=10"/>
@@ -910,9 +904,6 @@
 								<option id="com.crt.advproject.gcc.hdrlib.638189276" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" useByScannerDiscovery="false" value="com.crt.advproject.gcc.hdrlib.newlib" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.895836932" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
-									<listOptionValue builtIn="false" value="DUMP_MEM_OPS"/>
-									<listOptionValue builtIn="false" value="DUMP_TELEGRAMS_BUS"/>
-									<listOptionValue builtIn="false" value="DUMP_TELEGRAM"/>
 									<listOptionValue builtIn="false" value="DEBUG_OUT8_BI"/>
 									<listOptionValue builtIn="false" value="SPI_BLOCK_TRANSFER"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
@@ -945,6 +936,28 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.crt.advproject.config.lib.debug.95539643.1457915723.2109219096.1226511098" name="serial0.cpp" rcbsApplicability="disable" resourcePath="src/serial0.cpp" toolsToInvoke="com.crt.advproject.cpp.lib.debug.533385976.1553947188">
+						<tool command="arm-none-eabi-c++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="com.crt.advproject.cpp.lib.debug.533385976.1553947188" name="MCU C++ Compiler" superClass="com.crt.advproject.cpp.lib.debug.533385976">
+							<option id="gnu.cpp.compiler.option.preprocessor.def.974644038" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+								<listOptionValue builtIn="false" value="__NEWLIB__"/>
+								<listOptionValue builtIn="false" value="DEBUG_OUT8_BI"/>
+								<listOptionValue builtIn="false" value="SPI_BLOCK_TRANSFER"/>
+								<listOptionValue builtIn="false" value="BCU_TYPE=10"/>
+								<listOptionValue builtIn="false" value="DEBUG"/>
+								<listOptionValue builtIn="false" value="__CODE_RED"/>
+								<listOptionValue builtIn="false" value="CORE_M0"/>
+								<listOptionValue builtIn="false" value="__USE_CMSIS=CMSIS_CORE_LPC11xx"/>
+								<listOptionValue builtIn="false" value="__LPC11XX__"/>
+							</option>
+							<inputType id="com.crt.advproject.compiler.cpp.input.772996791" superClass="com.crt.advproject.compiler.cpp.input"/>
+						</tool>
+						<tool announcement="Invoking: Resource Custom Build Step" command="" customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.624791367" name="Resource Custom Build Step">
+							<inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.887421092" name="Resource Custom Build Step Input Type">
+								<additionalInput kind="additionalinputdependency" paths=""/>
+							</inputType>
+							<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.886854141" name="Resource Custom Build Step Output Type" outputNames=""/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="inc"/>
 						<entry excluding="lpc11uxx" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>

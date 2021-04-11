@@ -40,9 +40,9 @@ BcuBase::BcuBase()
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
 void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
-	_begin();
+	_begin(); // load flash/rom data to usereeprom, init bcu
+
 #ifdef DUMP_TELEGRAMS
- //   serial.begin(115200);
     serial.println("Telegram dump enabled");
 #endif
 
@@ -131,7 +131,7 @@ void BcuBase::loop()
 
 	if (telLength > 0)
 	{
-		serial.println();
+		//serial.println();
 		serial.print("RCV: (");
 
 		serial.print(telRXtime, DEC, 8);
@@ -149,20 +149,24 @@ void BcuBase::loop()
 #endif
 
 #ifdef DEBUG_BUS
+	// trace buffer contend:
+	// trace point id (start with s) followed by trace data, coding: sittee
+	// i: state machine trace point code
+	//  0000-3999  one timer value
+	//  4000-5999 one hex value
+	//  6000-7999 one dec value
+	//  8000-8999 all timer values at interrupt
+	//  9000 - rx tel data values
+	// tt: trace point number within certain state
+	// ee: state of state machine at trace point
 
-	// 0-99 state, 1xx -9xx point within state
-	// state: 8000 - 8999 all timer values
-	// 000-3999  one timer value
-	//4000-5999 one hex value
-	//6000-7999 one dec value
-	//9000 - rx tel data values
 
 
 	static unsigned int t,l, l1, lt,lt1, s, cv,tv, tmv;
 	bool cf;
 	l=0; l1=0;
-	//while (tb_in != tb_out && l1 < 10) {
-	while (tb_in != tb_out) {
+	while (tb_in != tb_out && l1 < 5) {
+	//while (tb_in != tb_out) {
 		l1++;
 		s= td_b[tb_out].ts;
 		t= td_b[tb_out].tt;
@@ -172,7 +176,7 @@ void BcuBase::loop()
 		cf= td_b[tb_out].tc;
 		if ((s>=8000 && s<=8999) ) {
 			serial.println();
-			//serial.print("s:");
+			serial.print("s");
 			serial.print( (unsigned int) s, DEC, 3);
 			serial.print(" t");
 			serial.print( (unsigned int) t, DEC, 6);
@@ -198,13 +202,13 @@ void BcuBase::loop()
 		}
 		else if ( s>=9000) {
 			serial.println();
-			serial.print("s:");
+			serial.print("s");
 			serial.print( (unsigned int) s, DEC, 3);
-			serial.print(" c/v:");
+			serial.print(" c/v");
 			serial.print((unsigned int)cf, HEX, 2);
 			serial.print(" L");
 			serial.print((unsigned int)tmv, DEC, 2);
-			serial.print(" t:");
+			serial.print(" t");
 			serial.print( (unsigned int) t, HEX, 8);
 			serial.print(" ");
 			serial.print((unsigned int)cv, HEX, 4);
@@ -213,7 +217,7 @@ void BcuBase::loop()
 			//serial.print("*");
 		}else if ( s>=9005) {
 			serial.println();
-			serial.print("s:");
+			serial.print("s");
 			serial.print( (unsigned int) s, DEC, 3);
 			serial.print(" ");
 			serial.print((unsigned int)tmv, HEX,4);
@@ -223,27 +227,27 @@ void BcuBase::loop()
 			serial.print((unsigned int)cv, HEX, 4);
 			serial.print(" ");
 			serial.print((unsigned int)tv, HEX, 4);
-			serial.print(" d:");
+			serial.print(" d");
 			serial.print((unsigned int)cf, HEX, 4);
 			//serial.print("*");
 		}
 		else  if (s < 4000) { // one  delta timer
-			serial.print("s:");
+			serial.print("s");
 			serial.print( (unsigned int) s -2000, DEC, 3);
-			serial.print(" dt:");
+			serial.print(" dt");
 			serial.print( (unsigned int) t-lt1, DEC, 6);
 			lt1 = t;
 			l++;
 		}
 		else if (s < 5000) { // one hex
-			serial.print("s:");
+			serial.print("s");
 			serial.print( (unsigned int) s- 4000, DEC, 3);
 			serial.print(" h");
 			serial.print( (unsigned int) t,HEX,4);
 			l++;
 		}
 		else if (s < 6000) { // one dec
-			serial.print("s:");
+			serial.print("s");
 			serial.print( (unsigned int) s- 5000, DEC, 3);
 			serial.print(" d");
 			serial.print( (unsigned int) t,DEC,4);
@@ -253,7 +257,7 @@ void BcuBase::loop()
 			l=0;
 			serial.println();
 //			serial.print("* ");
-		} else  serial.print(" *");
+		} else  serial.print(" ");
 		if (++tb_out >= tb_lngth){ tb_out =0; tb_in_ov = false;}
 		if(tb_in_ov && tb_out <= tb_in)  serial.print(" !!OV**");
 	}
