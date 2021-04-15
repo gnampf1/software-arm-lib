@@ -776,11 +776,11 @@ void Bus::handleTelegram(bool valid)
 			// check the repeat bit in header and compare with previous received telegram still stored in the telegram[] buffer
 			bool already_received = false;
 			//check time in between the telegrams received should be less than 6ms for repeated tel and the orig tel
-		    if ((lastRXTimeVal <= millis() + 6) && !(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
+			if ((lastRXTimeVal <= millis() + 6) && !(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
 			{// compare telegrams
-		    	if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
+				if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
 				{// same header- compare data
-		    		int i;
+					int i;
 					for (i =1; i <= nextByteIndex-1 && rx_telegram[i] == telegram[i]; i++);
 					if (i>=nextByteIndex) {
 						already_received = true;
@@ -814,8 +814,8 @@ void Bus::handleTelegram(bool valid)
 				if ( sendAck){
 					state = Bus::RECV_WAIT_FOR_ACK_TX_START;
 					time = SEND_ACK_WAIT_TIME - PRE_SEND_TIME;
-
-				} }
+				}
+			}
 		} //
 	}
 	else if (nextByteIndex == 1 && parity)   // Received a spike or a bus acknowledgment, only parity, no checksum
