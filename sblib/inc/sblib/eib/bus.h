@@ -134,6 +134,18 @@ public:
     bool idle() const;
 
     /**
+     *    Interface to upper layer for sending a telegram
+     *
+     * Is called from within the BCU-loop method. Is blocking if there is no free buffer pointer.
+     *
+     * The procedure is handling two buffer pointers: sendCurTel and SendNextTel, the received pointer is loaded to an available
+     * free pointer or is waiting for a free pointer
+     *
+     * !!! As we have only one buffer at BCU level, the check for buffer free is needed on application before any buffer data is
+     * written !!!
+     *
+     * A free buffer is indicated with "0" as the first byte in the buffer: buffer[0]=0
+     *
      * Send a telegram. The checksum byte will be added at the end of telegram[].
      * Ensure that there is at least one byte space at the end of telegram[].
      *
@@ -276,6 +288,11 @@ private:
 
     /**
      * Switch to the next telegram for sending.
+     *
+     * mark the current send buffer as free -> set first byte of buffer to 0
+     * load a possible waiting/next buffer to current buffer
+     * initialize some low level parameters for the interrupt driven send process
+     *
      */
     void sendNextTelegram();
 
@@ -299,7 +316,7 @@ private:
     void handleTelegram(bool valid);
 
 
-    /**
+    /** !!!!!!!!!!! not available in code !!!!!!!!!!!!
        * Sending Process is waiting for an acknowledgment.
        * Handle the received byte(s) on a low level. Repeat the last send Telegram in case of invalid ack
        *  This function is called by the function TIMER16_1_IRQHandler() to decide about repetition
@@ -380,6 +397,7 @@ private:
 
 
 //define some error states
+#define RX_OK 0
 #define RX_STARTBIT_ERROR 1  			// we detected high level few us after cap. event of start bit
 #define RX_STOPBIT_ERROR 2 			// we received a cap event during stop bit
 #define RX_TIMING_ERROR 4			// received edge of bits is not in the timing window n*104-7 - n*104+33
@@ -389,6 +407,7 @@ private:
 #define RX_LENGHT_ERROR 64			// checksum not valid
 #define RX_BUFFER_BUSY 128			// rx buffer still busy by higher layer process while a new telegram was received
 
+#define TX_OK 0
 #define TX_STARTBIT_BUSY_ERROR 1	// bus is busy few us before we intended to send a start bit
 #define TX_TIMING_ERROR 2			// error during the sending of bits (low bit after high bit was not detected
 #define TX_NACK_ERROR 4				// we received a NACK

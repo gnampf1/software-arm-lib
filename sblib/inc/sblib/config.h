@@ -10,8 +10,12 @@
 #ifndef SBLIB_CONFIG_H_
 #define SBLIB_CONFIG_H_
 
+// for serial output it is recommended to use PIO2_7 and PIO2_8 at high baud rate e.g 1.5MB
+//   serial.setRxPin(PIO2_7);
+//   serial.setTxPin(PIO2_8);
+//   serial.begin(1500000);  1.5Mbaud
+// should be set in the app, serial object is defined in seriel0.cpp
 
-#define SERIAL_DEBUG_PORT   //!> sets serial port to PIO2_7 and PIO_2_8 for dumping debug data
 //#define DEBUG_BUS           //!> dump interrupt/SM data on byte and telegram level over serial interface
 //#define DEBUG_BUS_BITLEVEL  //!> dump interrupt/SM data of each rx/tx bit over serial interface
 
@@ -20,7 +24,7 @@
 #define DEBUG_COM_OBJ       //!> dump object handling information on app-server level over serial interface
 
 
-//#define DEBUG_OUT8_BI       //!>
+#define DEBUG_OUT8_BI       //!>
 
 #define DUMP_MEM_OPS    //!> dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
 #define DEBUG_SERIAL    //!> dump KNX-serialnumber over serial interface

@@ -479,7 +479,6 @@ void Bus::begin()
 #endif
 
 	//todo load sendtries from eprom
-
 	//sendTriesMax =  userEeprom.maxRetransmit & 0x03;
 	//sendBusyTriesMax = (userEeprom.maxRetransmit >>5) & 0x03; // default
 
@@ -538,9 +537,6 @@ void Bus::begin()
 	DB(serial.println((unsigned int) sendBusyTriesMax, DEC, 6);)
 	DB(serial.print("phy addr: ");)
 	DB(serial.println((unsigned int) ownAddr, HEX, 4);)
-
-
-
 #endif
 
 	//
@@ -566,6 +562,8 @@ void Bus::begin()
 	//D(digitalWrite(PIO2_9, 0));
 	//D(digitalWrite(PIO2_10, 0));
 }
+
+
 
 /*
  * Prepare the telegram for sending. Set the sender address to our own
@@ -825,7 +823,7 @@ void Bus::handleTelegram(bool valid)
 		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
 		if ( wait_for_ack_from_remote) {
 			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
-			{ // last sending  to remote was ok, prepare for next tx telegram
+			{ // last sending  to remote was ok or max retry, prepare for next tx telegram
 				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
 				tb_h( 906, tx_error, tb_in);
 				sendNextTelegram();
@@ -863,6 +861,13 @@ void Bus::handleTelegram(bool valid)
 	timer.match(timeChannel,time);
 }
 
+/*
+ * Current telegram was send, send next telegram
+ *
+ * load data for next telegram, save  send resultState - driven by interrupts of timer and capture input
+ * Free send-buffer is indicated by "0" in the header byte: send-buffer[0]=0
+ *
+ */
 
 void Bus::sendNextTelegram()
 {
@@ -1280,7 +1285,7 @@ void Bus::timerInterruptHandler()
 		if (bitMask > 0x200) // stop bit reached
 		{
 			if (nextByteIndex < sendTelegramLen && !sendAck) // if tel. end or ack, stop sending
-			{//  we are at the rising edge of parity bit-> need to send 4 bit:3 high bits (stop bit, 2 fill bits) and start bit pulse  of next byte by pwm
+			{//  we are at the rising edge of parity bit-> need to send 4 bit:3 high bits (stop bit, 2 fill bits) and start bit pulse of next byte by pwm
 				time += BIT_TIME *3;
 				state = Bus::SEND_BIT_0;  // state for  bit-0 of next byte to send
 			}
@@ -1291,7 +1296,7 @@ void Bus::timerInterruptHandler()
 			}
 		}
 		// set next match/interrupt
-		// if we are sending high bits, we wait for next low bit edge by cap interrupt which might  be a collision
+		// if we are sending high bits, we wait for next low bit edge by cap interrupt which might be a collision
 		// or timeout interrupt indicating end of bit pulse sending (high or low)
 		if (state == Bus::SEND_WAIT_FOR_HIGH_BIT_END)
 			timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
@@ -1350,7 +1355,6 @@ void Bus::timerInterruptHandler()
 		state = Bus::SEND_BITS_OF_BYTE;
 		tx_error |= TX_TIMING_ERROR;
 		goto STATE_SWITCH;
-		//tb_t( state*+300, ttimer.value(), tb_in);
 		break;
 
 		//state is in sync with resp. to bus timing,  entered by match interrupt  after last bytes stop bit was send
@@ -1358,7 +1362,6 @@ void Bus::timerInterruptHandler()
 		// timer was reset
 	case Bus::SEND_END_OF_TX:
 		tb_t( state, ttimer.value(), tb_in);
-		//tb_h( state+100, sendAck, tb_in);
 		tb_h( SEND_END_OF_TX+700, repeatTelegram, tb_in);
 		D(digitalWrite(PIO2_9, 1));
 
@@ -1377,7 +1380,7 @@ void Bus::timerInterruptHandler()
 
 			// normal data frame, check for ack request for our telegram
 			if (!(sendCurTelegram[0] & SB_TEL_ACK_REQ_FLAG)) {
-				wait_for_ack_from_remote = true; // default   for data layer: send ack back to remote
+				wait_for_ack_from_remote = true; // default for data layer: send ack back to remote
 				time=  ACK_WAIT_TIME_MIN; //we wait 15BT- marging for ack rx window, cap intr disabled
 				state = Bus::SEND_WAIT_FOR_RX_ACK_WINDOW;
 				timer.matchMode(timeChannel, INTERRUPT); // no timer reset after timeout

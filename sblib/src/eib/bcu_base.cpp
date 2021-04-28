@@ -46,6 +46,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
     serial.println("Telegram dump enabled");
 #endif
 
+    // set sending buffer to free
     sendTelegram[0] = 0;
     sendCtrlTelegram[0] = 0;
 

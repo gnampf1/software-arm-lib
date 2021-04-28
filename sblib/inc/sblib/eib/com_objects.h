@@ -37,6 +37,10 @@
 #include <sblib/eib/types.h>
 #include <sblib/eib/datapoint_types.h>
 
+
+#define invalid_objectno -1
+
+
 extern int le_ptr;
 
 inline void objectEndian(int val)
@@ -223,9 +227,9 @@ ComType objectType(int objno);
 const ComConfig& objectConfig(int objno);
 
 /**
- * Process a multicast group telegram.
+ * Process a multicast group telegram received from bus or requested by the application.
  *
- * This function is called by bcu.processTelegram(). It is usually not required to call
+ * This function is called by bcu.processTelegram() and from the local process. It is usually not required to call
  * this function from within a user program.
  *
  * @param addr - the destination group address.
@@ -235,8 +239,15 @@ const ComConfig& objectConfig(int objno);
  *         APCI_GROUP_VALUE_READ_PDU
  * @tel - pointer to the telegram to read from
  *         (only used if APCI_GROUP_VALUE_WRITE_PDU or APCI_GROUP_VALUE_RESPONSE_PDU)
+ *
+ *         if called from app, we have the triggering object as additional parameter
+ * @trg_objno - objno triggering the group telegram from the application layer
+ *
  */
+
 void processGroupTelegram(int addr, int apci, byte* tel);
+
+void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno);
 
 /**
  * Get the communication object configuration table ("COMMS" table). This is the table
@@ -266,6 +277,12 @@ byte* objectFlagsTable();
 //
 //  Inline functions
 //
+
+inline void processGroupTelegram(int addr, int apci, byte* tel)
+{ // call with neg/invalid object
+
+	processGroupTelegram(addr, apci, tel, invalid_objectno);
+}
 
 inline ComType objectType(int objno)
 {

@@ -23,14 +23,13 @@
 
 #if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS
 #include <sblib/serial.h>
+#endif
 
 // Enable informational debug statements
 #if defined (DEBUG_BUS) || defined (DUMP_TELEGRAMS)
 #define DB(x) x
 #else
 #define DB(x)
-#endif
-
 #endif
 
 extern unsigned int writeUserEepromTime;
@@ -41,7 +40,9 @@ void BCU::_begin()
     readUserEeprom();
     sendGrpTelEnabled = true;
     groupTelSent = millis();
-    groupTelWaitMillis = 0; // 0 disables limit, we wait 5ms in orde to reduce power dissipation of the sendig circuit
+
+    // set limit to max of 28 telegrams per second (wait 35ms) -  to avoid risk of thermal destruction of the sending circuit
+    groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
 }
 
 void BCU::end()
@@ -56,6 +57,13 @@ void BCU::end()
     }
 }
 
+
+/**
+ *  main loop for Receiving and transmitting and receiving telegrams toward the interrupt driven bus/physical layer
+ *
+ *  todo mapp sending results to the objects error state
+ *
+ */
 void BCU::loop()
 {
     if (!enabled)
@@ -74,7 +82,7 @@ void BCU::loop()
              groupTelSent = millis();
 
         }
-        // To prevent overflows if no telegrams are sent for a long time
+        // To prevent overflows if no telegrams are sent for a long time - todo: better reload with systemTime - groupTelWaitMillis
         if (elapsed(groupTelSent) >= 2000)
         {
             groupTelSent += 1000;
@@ -122,15 +130,27 @@ void BCU::sendConControlTelegram(int cmd, int senderSeqNo)
     bus.sendTelegram(sendCtrlTelegram, 7);
 }
 
+
+/**
+ * BUS process has receive a telegram - now process it
+ *
+ * called from BCUBase-loop
+ *
+ * todo check for RX status and inform upper layer if needed
+ *
+ */
 void BCU::processTelegram()
 {
     unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
     unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
+	int rx_state = bus.receivedTelegramState();
 
     DB(serial.println());
-	DB(serial.print("BCU1: ");)
-	DB(serial.println((unsigned int)destAddr, HEX, 4);)
+	DB(serial.print("BCU1 grp addr: ");)
+	DB(serial.print((unsigned int)destAddr, HEX, 4);)
+	DB(serial.print(" error state:  ");)
+	DB(serial.println((unsigned int)rx_state, HEX, 4);)
 
     if (destAddr == 0) // a broadcast
     {
