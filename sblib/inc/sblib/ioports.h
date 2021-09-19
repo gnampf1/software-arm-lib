@@ -60,17 +60,7 @@ enum
 
     PFF_SHIFT_OFFSET = 5,
     PFF_MASK = (1 << PFF_SHIFT_OFFSET) - 1,
-
-    PF0_SHIFT = 9,
-    PF1_SHIFT = PF0_SHIFT + PFF_SHIFT_OFFSET,
-    PF2_SHIFT = PF1_SHIFT + PFF_SHIFT_OFFSET,
-    PF3_SHIFT = PF2_SHIFT + PFF_SHIFT_OFFSET
 };
-
-#define FUNC0(x) ((x) << PF0_SHIFT)
-#define FUNC1(x) ((x) << PF1_SHIFT)
-#define FUNC2(x) ((x) << PF2_SHIFT)
-#define FUNC3(x) ((x) << PF3_SHIFT)
 
 #if defined (__LPC11XX__)
 /**
@@ -91,295 +81,295 @@ enum
 enum PortPin
 {
     // Port 0 pin 0
-    PIO0_0 = 0x00 | FUNC0(PF_RESET) | FUNC1(PF_PIO),
+    PIO0_0 = 0x00,
 
     // Port 0 pin 1
-    PIO0_1 = 0x01 | FUNC0(PF_PIO) | FUNC1(PF_CLKOUT) | FUNC2(PF_MAT),
+    PIO0_1 = 0x01,
 
     // Port 0 pin 2
-    PIO0_2 = 0x02 | FUNC0(PF_PIO) | FUNC1(PF_SSEL) | FUNC2(PF_CAP),
+    PIO0_2 = 0x02,
 
     // Port 0 pin 3
-    PIO0_3 = 0x03 | FUNC0(PF_PIO),
+    PIO0_3 = 0x03,
 
     // Port 0 pin 4
-    PIO0_4 = 0x04 | FUNC0(PF_PIO) | FUNC1(PF_SCL),
+    PIO0_4 = 0x04,
 
     // Port 0 pin 5
-    PIO0_5 = 0x05 | FUNC0(PF_PIO) | FUNC1(PF_SDA),
+    PIO0_5 = 0x05,
 
     // Port 0 pin 6
-    PIO0_6 = 0x06 | FUNC0(PF_PIO) | FUNC1(PF_NONE) | FUNC2(PF_SCK),
+    PIO0_6 = 0x06,
 
     // Port 0 pin 7
-    PIO0_7 = 0x07 | FUNC0(PF_PIO) | FUNC1(PF_CTS),
+    PIO0_7 = 0x07,
 
     // Port 0 pin 8
-    PIO0_8 = 0x08 | FUNC0(PF_PIO) | FUNC1(PF_MISO) | FUNC2(PF_MAT),
+    PIO0_8 = 0x08,
 
     // Port 0 pin 9
-    PIO0_9 = 0x09 | FUNC0(PF_PIO) | FUNC1(PF_MOSI) | FUNC2(PF_MAT),
+    PIO0_9 = 0x09,
 
     // Port 0 pin 10
-    PIO0_10 = 0x0a | FUNC0(PF_SWCLK) | FUNC1(PF_PIO) | FUNC2(PF_SCK) | FUNC3(PF_MAT),
+    PIO0_10 = 0x0a,
 
     // Port 0 pin 11
-    PIO0_11 = 0x0b | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO0_11 = 0x0b,
 
 
     // Port 1 pin 0
-    PIO1_0 = 0x20 | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_CAP) | PFL_ADMODE,
+    PIO1_0 = 0x20,
 
     // Port 1 pin 1
-    PIO1_1 = 0x21 | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO1_1 = 0x21,
 
     // Port 1 pin 2
-    PIO1_2 = 0x22 | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO1_2 = 0x22,
 
     // Port 1 pin 3
-    PIO1_3 = 0x23 | FUNC0(PF_SWDIO) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO1_3 = 0x23,
 
     // Port 1 pin 4
-    PIO1_4 = 0x24 | FUNC0(PF_PIO) | FUNC1(PF_AD) | FUNC2(PF_MAT) | PFL_ADMODE,
+    PIO1_4 = 0x24,
 
     // Port 1 pin 5
-    PIO1_5 = 0x25 | FUNC0(PF_PIO) | FUNC1(PF_RTS) | FUNC2(PF_CAP),
+    PIO1_5 = 0x25,
 
     // Port 1 pin 6
-    PIO1_6 = 0x26 | FUNC0(PF_PIO) | FUNC1(PF_RXD) | FUNC2(PF_MAT),
+    PIO1_6 = 0x26,
 
     // Port 1 pin 7
-    PIO1_7 = 0x27 | FUNC0(PF_PIO) | FUNC1(PF_TXD) | FUNC2(PF_MAT),
+    PIO1_7 = 0x27,
 
     // Port 1 pin 8
-    PIO1_8 = 0x28 | FUNC0(PF_PIO) | FUNC1(PF_CAP),
+    PIO1_8 = 0x28,
 
     // Port 1 pin 9
-    PIO1_9 = 0x29 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_MOSI),
+    PIO1_9 = 0x29,
 
     // Port 1 pin 10
-    PIO1_10 = 0x2a | FUNC0(PF_PIO) | FUNC1(PF_AD) | FUNC2(PF_MAT) | FUNC3(PF_MISO) | PFL_ADMODE,
+    PIO1_10 = 0x2a,
 
     // Port 1 pin 11
-    PIO1_11 = 0x2b | FUNC0(PF_PIO) | FUNC1(PF_AD) | FUNC2(PF_CAP) | PFL_ADMODE,
+    PIO1_11 = 0x2b,
 
 
     // Port 2 pin 0
-    PIO2_0 = 0x40 | FUNC0(PF_PIO) | FUNC1(PF_DTR) | FUNC2(PF_SSEL),
+    PIO2_0 = 0x40,
 
     // Port 2 pin 1
-    PIO2_1 = 0x41 | FUNC0(PF_PIO) | FUNC1(PF_DSR) | FUNC2(PF_SCK),
+    PIO2_1 = 0x41,
 
     // Port 2 pin 2
-    PIO2_2 = 0x42 | FUNC0(PF_PIO) | FUNC1(PF_DCD) | FUNC2(PF_MISO),
+    PIO2_2 = 0x42,
 
     // Port 2 pin 3
-    PIO2_3 = 0x43 | FUNC0(PF_PIO) | FUNC1(PF_RI) | FUNC2(PF_MOSI),
+    PIO2_3 = 0x43,
 
     // Port 2 pin 4
-    PIO2_4 = 0x44 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_SSEL),
+    PIO2_4 = 0x44,
 
     // Port 2 pin 5
-    PIO2_5 = 0x45 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO2_5 = 0x45,
 
     // Port 2 pin 6
-    PIO2_6 = 0x46 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO2_6 = 0x46,
 
     // Port 2 pin 7
-    PIO2_7 = 0x47 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_RXD),
+    PIO2_7 = 0x47,
 
     // Port 2 pin 8
-    PIO2_8 = 0x48 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_TXD),
+    PIO2_8 = 0x48,
 
     // Port 2 pin 9
-    PIO2_9 = 0x49 | FUNC0(PF_PIO) | FUNC1(PF_CAP),
+    PIO2_9 = 0x49,
 
     // Port 2 pin 10
-    PIO2_10 = 0x4a | FUNC0(PF_PIO),
+    PIO2_10 = 0x4a,
 
     // Port 2 pin 11
-    PIO2_11 = 0x4b | FUNC0(PF_PIO) | FUNC1(PF_SCK) | FUNC2(PF_CAP),
+    PIO2_11 = 0x4b,
 
 
     // Port 3 pin 0
-    PIO3_0 = 0x60 | FUNC0(PF_PIO) | FUNC1(PF_DTR) | FUNC2(PF_MAT) | FUNC3(PF_TXD),
+    PIO3_0 = 0x60,
 
     // Port 3 pin 1
-    PIO3_1 = 0x61 | FUNC0(PF_PIO) | FUNC1(PF_DSR) | FUNC2(PF_MAT) | FUNC3(PF_RXD),
+    PIO3_1 = 0x61,
 
     // Port 3 pin 2
-    PIO3_2 = 0x62 | FUNC0(PF_PIO) | FUNC1(PF_DCD) | FUNC2(PF_MAT) | FUNC3(PF_SCK),
+    PIO3_2 = 0x62,
 
     // Port 3 pin 3
-    PIO3_3 = 0x63 | FUNC0(PF_PIO) | FUNC1(PF_RI) | FUNC2(PF_CAP),
+    PIO3_3 = 0x63,
 
     // Port 3 pin 4
-    PIO3_4 = 0x64 | FUNC0(PF_PIO) | FUNC1(PF_CAP) | FUNC2(PF_RXD),
+    PIO3_4 = 0x64,
 
     // Port 3 pin 5
-    PIO3_5 = 0x65 | FUNC0(PF_PIO) | FUNC1(PF_CAP) | FUNC2(PF_TXD)
+    PIO3_5 = 0x65
 };
 #elif defined (__LPC11UXX__)
 enum PortPin
 {
     // Port 0 pin 0
-    PIO0_0 = 0x00 | FUNC0(PF_RESET) | FUNC1(PF_PIO),
-    REST_PIO0_0 = 0x00 | FUNC0(PF_RESET) | FUNC1(PF_PIO),
+    PIO0_0 = 0x00,
+    REST_PIO0_0 = 0x00,
 
     // Port 0 pin 1
-    PIO0_1 = 0x01 | FUNC0(PF_PIO) | FUNC1(PF_CLKOUT) | FUNC2(PF_MAT) | FUNC3(PF_USB_FTOGGLE),
+    PIO0_1 = 0x01,
 
     // Port 0 pin 2
-    PIO0_2 = 0x02 | FUNC0(PF_PIO) | FUNC1(PF_SSEL) | FUNC2(PF_CAP),
+    PIO0_2 = 0x02,
 
     // Port 0 pin 3
-    PIO0_3 = 0x03 | FUNC0(PF_PIO) | FUNC1(PF_USB_VBUS),
+    PIO0_3 = 0x03,
 
     // Port 0 pin 4
-    PIO0_4 = 0x04 | FUNC0(PF_PIO) | FUNC1(PF_SCL),
+    PIO0_4 = 0x04,
 
     // Port 0 pin 5
-    PIO0_5 = 0x05 | FUNC0(PF_PIO) | FUNC1(PF_SDA),
+    PIO0_5 = 0x05,
 
     // Port 0 pin 6
-    PIO0_6 = 0x06 | FUNC0(PF_PIO) | FUNC1(PF_USB_CONNECT) | FUNC2(PF_SCK),
+    PIO0_6 = 0x06,
 
     // Port 0 pin 7
-    PIO0_7 = 0x07 | FUNC0(PF_PIO) | FUNC1(PF_CTS),
+    PIO0_7 = 0x07,
 
     // Port 0 pin 8
-    PIO0_8 = 0x08 | FUNC0(PF_PIO) | FUNC1(PF_MISO) | FUNC2(PF_MAT) | FUNC3(PF_ARM_TRACE_CLK),
+    PIO0_8 = 0x08,
 
     // Port 0 pin 9
-    PIO0_9 = 0x09 | FUNC0(PF_PIO) | FUNC1(PF_MOSI) | FUNC2(PF_MAT) | FUNC3(PF_ARM_TRACE_SWV),
+    PIO0_9 = 0x09,
 
     // Port 0 pin 10
-    PIO0_10 = 0x0a | FUNC0(PF_SWCLK) | FUNC1(PF_PIO) | FUNC2(PF_SCK) | FUNC3(PF_MAT),
+    PIO0_10 = 0x0a,
 
     // Port 0 pin 11
-    PIO0_11 = 0x0b | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO0_11 = 0x0b,
 
     // Port 0 pin 12
-    PIO0_12 = 0x0c | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_CAP) | PFL_ADMODE,
+    PIO0_12 = 0x0c,
 
     // Port 0 pin 13
-    PIO0_13 = 0x0d | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO0_13 = 0x0d,
 
     // Port 0 pin 14
-    PIO0_14 = 0x0e | FUNC0(PF_NONE) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO0_14 = 0x0e,
 
     // Port 0 pin 15
-    PIO0_15 = 0x0f | FUNC0(PF_SWDIO) | FUNC1(PF_PIO) | FUNC2(PF_AD) | FUNC3(PF_MAT) | PFL_ADMODE,
+    PIO0_15 = 0x0f,
 
     // Port 0 pin 16
-    PIO0_16 = 0x10 | FUNC0(PF_PIO) | FUNC1(PF_AD) | FUNC2(PF_MAT) | PFL_ADMODE,
+    PIO0_16 = 0x10,
 
     // Port 0 pin 17
-    PIO0_17 = 0x11 | FUNC0(PF_PIO) | FUNC1(PF_RTS) | FUNC2(PF_CAP) | FUNC3(PF_SCLK),
+    PIO0_17 = 0x11,
 
     // Port 0 pin 18
-    PIO0_18 = 0x12 | FUNC0(PF_PIO) | FUNC1(PF_RXD) | FUNC2(PF_MAT),
+    PIO0_18 = 0x12,
 
     // Port 0 pin 19
-    PIO0_19 = 0x13 | FUNC0(PF_PIO) | FUNC1(PF_TXD) | FUNC2(PF_MAT),
+    PIO0_19 = 0x13,
 
     // Port 0 pin 20
-    PIO0_20 = 0x14 | FUNC0(PF_PIO) | FUNC1(PF_CAP),
+    PIO0_20 = 0x14,
 
     // Port 0 pin 21
-    PIO0_21 = 0x15 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_MOSI),
+    PIO0_21 = 0x15,
 
     // Port 0 pin 2
-    PIO0_22 = 0x16 | FUNC0(PF_PIO) | FUNC1(PF_AD) | FUNC2(PF_MAT) | FUNC3(PF_MISO) | PFL_ADMODE,
+    PIO0_22 = 0x16,
 
     // Port 0 pin 23
-    PIO0_23 = 0x17 | FUNC0(PF_PIO) | FUNC1(PF_AD) |  PFL_ADMODE,
+    PIO0_23 = 0x17,
 
 
     // Port 1 pin 0
-    PIO1_0 = 0x20 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_0 = 0x20,
 
     // Port 1 pin 1
-    PIO1_1 = 0x21 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_1 = 0x21,
 
     // Port 1 pin 2
-    PIO1_2 = 0x22 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_2 = 0x22,
 
     // Port 1 pin 3
-    PIO1_3 = 0x23 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_3 = 0x23,
 
     // Port 1 pin 4
-    PIO1_4 = 0x24 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_4 = 0x24,
 
     // Port 1 pin 5
-    PIO1_5 = 0x25 | FUNC0(PF_PIO) | FUNC1(PF_CAP),
+    PIO1_5 = 0x25,
 
     // Port 1 pin 7
-    PIO1_7 = 0x27 | FUNC0(PF_PIO),
+    PIO1_7 = 0x27,
 
     // Port 1 pin 8
-    PIO1_8 = 0x28 | FUNC0(PF_PIO),
+    PIO1_8 = 0x28,
 
     // Port 1 pin 10
-    PIO1_10 = 0x2a | FUNC0(PF_PIO),
+    PIO1_10 = 0x2a,
 
     // Port 1 pin 11
-    PIO1_11 = 0x2b | FUNC0(PF_PIO),
+    PIO1_11 = 0x2b,
 
     // Port 1 pin 13
-    PIO1_13 = 0x2d | FUNC0(PF_PIO) | FUNC1(PF_DTR) | FUNC2(PF_MAT) | FUNC3(PF_TXD),
+    PIO1_13 = 0x2d,
 
     // Port 1 pin 14
-    PIO1_14 = 0x2e | FUNC0(PF_PIO) | FUNC1(PF_DSR) | FUNC2(PF_MAT) | FUNC3(PF_RXD),
+    PIO1_14 = 0x2e,
 
     // Port 1 pin 15
-    PIO1_15 = 0x2f | FUNC0(PF_PIO) | FUNC1(PF_DCD) | FUNC2(PF_MAT) | FUNC3(PF_SCK),
+    PIO1_15 = 0x2f,
 
     // Port 1 pin 16
-    PIO1_16 = 0x30 | FUNC0(PF_PIO) | FUNC1(PF_RI) | FUNC2(PF_CAP),
+    PIO1_16 = 0x30,
 
     // Port 1 pin 17
-    PIO1_17 = 0x31 | FUNC0(PF_PIO) | FUNC1(PF_CAP) | FUNC2(PF_RXD),
+    PIO1_17 = 0x31,
 
     // Port 1 pin 18
-    PIO1_18 = 0x32 | FUNC0(PF_PIO) | FUNC1(PF_CAP) | FUNC2(PF_TXD),
+    PIO1_18 = 0x32,
 
 
     // Port 1 pin 19
-    PIO1_19 = 0x33 | FUNC0(PF_PIO) | FUNC1(PF_DTR) | FUNC2(PF_SSEL),
+    PIO1_19 = 0x33,
 
     // Port 1 pin 20
-    PIO1_20 = 0x34 | FUNC0(PF_PIO) | FUNC1(PF_DSR) | FUNC2(PF_SCK),
+    PIO1_20 = 0x34,
 
     // Port 1 pin 21
-    PIO1_21 = 0x35 | FUNC0(PF_PIO) | FUNC1(PF_DCD) | FUNC2(PF_MISO),
+    PIO1_21 = 0x35,
 
     // Port 1 pin 22
-    PIO1_22 = 0x36 | FUNC0(PF_PIO) | FUNC1(PF_RI) | FUNC2(PF_MOSI),
+    PIO1_22 = 0x36,
 
     // Port 1 pin 23
-    PIO1_23 = 0x37 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_SSEL),
+    PIO1_23 = 0x37,
 
     // Port 1 pin 24
-    PIO1_24 = 0x38 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_24 = 0x38,
 
     // Port 1 pin 25
-    PIO1_25 = 0x39 | FUNC0(PF_PIO) | FUNC1(PF_MAT),
+    PIO1_25 = 0x39,
 
     // Port 1 pin 26
-    PIO1_26 = 0x3a | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_RXD),
+    PIO1_26 = 0x3a,
 
     // Port 1 pin 27
-    PIO1_27 = 0x3b | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_TXD),
+    PIO1_27 = 0x3b,
 
     // Port 1 pin 28
-    PIO1_28 = 0x3c | FUNC0(PF_PIO) | FUNC1(PF_CAP) | FUNC2(PF_SCK),
+    PIO1_28 = 0x3c,
 
     // Port 1 pin 29
-    PIO1_29 = 0x3d | FUNC0(PF_PIO) | FUNC1(PF_SCK) | FUNC2(PF_CAP),
+    PIO1_29 = 0x3d,
 
     // Port 1 pin 31
-    PIO1_31 = 0x3f | FUNC0(PF_PIO),
+    PIO1_31 = 0x3f
 };
 #endif
 
