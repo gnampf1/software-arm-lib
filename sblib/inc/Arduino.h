@@ -1,8 +1,11 @@
 /*
- * Arduino.h
+ *  Arduino.h - Arduino compatibility layer
  *
- *  Created on: 31.08.2021
- *      Author: dridders
+ *  Copyright (c) 2021 Daniel Ridders <dridders-selfbusgit@dridders.de>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 3 as
+ *  published by the Free Software Foundation.
  */
 
 #ifndef ARDUINO_H_
