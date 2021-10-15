@@ -11,7 +11,11 @@
 #include <sblib/timer.h>
 
 #include <sblib/internal/variables.h>
+#include <sblib/interrupt.h>
 
+
+#define SYSTICK_ENABLED             ((SysTick->CTRL &  SysTick_CTRL_ENABLE_Msk) == SysTick_CTRL_ENABLE_Msk)
+#define SYSTICK_INTERRUPT_ENABLED   ((SysTick->CTRL &  SysTick_CTRL_TICKINT_Msk) == SysTick_CTRL_TICKINT_Msk)
 
 // The number of milliseconds since processor start/reset
 volatile unsigned int systemTime;
@@ -19,53 +23,77 @@ volatile unsigned int systemTime;
 // The timers
 static LPC_TMR_TypeDef* const timers[4] = { LPC_TMR16B0, LPC_TMR16B1, LPC_TMR32B0, LPC_TMR32B1 };
 
-
 void delay(unsigned int msec)
 {
-    unsigned int lastSystemTime = systemTime;
-
-    if (__get_IPSR() == 0x0) // check that no interrupt is active, otherwise "while" will end in a infinite loop
+#ifndef IAP_EMULATION
+    // check that SysTick is enabled, this also reads and resets COUNTFLAG
+    if ((!SYSTICK_ENABLED) && (!SYSTICK_INTERRUPT_ENABLED))
     {
-        while (msec)
-        {
-            if (lastSystemTime == systemTime)
-            {
-                __WFI();
-            }
-            else
-            {
-                lastSystemTime = systemTime;
-                --msec;
-            }
-        }
+        fatalError(); // no SysTick, no delay()
     }
-    else
+
+    // if any interrupt is active, fall-back to delayMicroseconds() (waiting SysTick's)
+    // otherwise "while" will end in an infinite loop
+    if (isInsideInterrupt())
     {
-        // fall-back to waiting SysTick's
-        delayMicroseconds(msec);
+        unsigned int maxDelayMs = MAX_DELAY_MILLISECONDS;
+        while (msec > maxDelayMs)
+        {
+            delayMicroseconds(maxDelayMs * 1000);
+            msec -= (maxDelayMs);
+        }
+
+        delayMicroseconds(msec * 1000);
+
+        return;
+    }
+#endif
+
+    unsigned int lastSystemTime = systemTime;
+    while (msec)
+    {
+        if (lastSystemTime == systemTime)
+        {
+            __WFI();
+        }
+        else
+        {
+            lastSystemTime = systemTime;
+            --msec;
+        }
     }
 }
 
 #ifndef IAP_EMULATION
 void delayMicroseconds(unsigned int usec)
 {
-    unsigned int val, lastVal = SysTick->VAL;
-    int ticksToWait = (usec - 2) * (SystemCoreClock / 1000000);
+    uint16_t lastSystemTickValue = SysTick->VAL; // get our start SysTickcount
+    uint16_t sysTickValue;                       // use word access for SysTick register
     int elapsed;
+    int ticksToWait = 1; // as fast as we can go
 
-    // SysTick is counting down and is reset to SysTick->LOAD when
-    // it reaches zero.
+    if (usec > MIN_DELAY_MICROSECONDS)
+    {
+        if (usec > MAX_DELAY_MICROSECONDS)
+        {
+            fatalError(); //stop execution otherwise we can run into a overflow
+        };
+        ticksToWait = (usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000000);
+        // ticksToWait = ((usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000)) / 1000; // this is more precise but also slower
+    }
 
     while (ticksToWait > 0)
     {
-        val = SysTick->VAL;
-
-        elapsed = lastVal - val;
+        // don't use SysTick->CTRL COUNTFLAG, by reading and processing it
+        // a undetected overflow can happen
+        sysTickValue = SysTick->VAL;
+        elapsed = lastSystemTickValue - sysTickValue;
         if (elapsed < 0)
+        {
             elapsed += SysTick->LOAD;
-
+        }
         ticksToWait -= elapsed;
-        lastVal = val;
+        lastSystemTickValue = sysTickValue;
     }
 }
 #endif
@@ -180,7 +208,7 @@ void Timer::counterMode(int mode, int clearMode)
 //
 // The original timer handler is used for performance reasons.
 // Use attachInterrupt() to override this handler.
-//
+// TODO there is nothing like attachInterrupt() in the sblib, copy&paste error?
 extern "C" void SysTick_Handler()
 {
     ++systemTime;
